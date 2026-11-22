@@ -1,0 +1,8 @@
+entsoe-py>=1.0
+pandas>=2.2
+pyarrow
+requests
+matplotlib
+holidays
+scikit-learn
+lightgbm
