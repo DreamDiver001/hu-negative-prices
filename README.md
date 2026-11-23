@@ -72,3 +72,11 @@ python src/battery.py --reuse --energy 4
 First it forecasts the price for every period as three quantiles (10%, 50%, 90%) with LightGBM, retrained each month, and compares the median with two naive forecasts (the price 1 and 7 days earlier). The forecasts are saved, so `--reuse` skips this slow step when you only change the battery.
 
 Then it runs a 1 MW / 2 MWh battery (88% round trip, at most one full cycle a day, empty at midnight, 10 €/MWh degradation cost) through every test day with four strategies: perfect foresight (the upper bound), a fixed schedule (charge 10:00-15:00, discharge 18:00-21:00), a schedule optimised on the median forecast, and a cautious one that plans with the 90% quantile as the buying price and the 10% quantile as the selling price. Each day is a small linear program. Profit is always counted at the real prices.
+
+## Figures for the paper
+
+```
+python src/make_figures.py
+```
+
+Builds `figures/paper_battery.png` and `.pdf` from the battery results: cumulative profit by strategy and each strategy's share of the perfect-foresight profit by month, with November to February shaded.
