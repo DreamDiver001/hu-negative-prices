@@ -1,7 +1,12 @@
-,"price<=0 vs >0, same month/hour/forecast level","price<=0 vs >0, same month/hour/forecast level","price<=0 vs >0, same month/hour/forecast level","placebo: weekend vs weekday, price > 20 only","placebo: weekend vs weekday, price > 20 only","placebo: weekend vs weekday, price > 20 only","price<=0 vs >0, same month/hour/irradiance","price<=0 vs >0, same month/hour/irradiance","price<=0 vs >0, same month/hour/irradiance"
-,gap,cells,treated_periods,gap,cells,treated_periods,gap,cells,treated_periods
-year,,,,,,,,,
-2023,-0.007929420247517928,18,137,0.009624594955398393,197,1797,,,
-2024,-0.06043835539565989,80,930,0.040661525067303576,139,1394,-0.06383879480749757,62.0,940.0
-2025,-0.1010721635082143,85,1078,-0.046038839996039485,131,1272,-0.16045002018152482,64.0,1088.0
-2026,-0.22655004522255434,72,821,0.07728785373203607,111,1015,-0.2393116079581354,62.0,886.0
+year,estimate,ci_low,ci_high,cells,periods,check
+2023,-0.007929420247517928,-0.06311106487550822,0.04384814215695438,18,137,"price<=0 vs >0, same month/hour/forecast level"
+2024,-0.06043835539565989,-0.0909495619091007,-0.021597320268916368,80,930,"price<=0 vs >0, same month/hour/forecast level"
+2025,-0.1010721635082143,-0.15788866075298502,-0.05306741227406697,85,1078,"price<=0 vs >0, same month/hour/forecast level"
+2026,-0.22655004522255434,-0.26406441175157275,-0.19843790890416857,72,821,"price<=0 vs >0, same month/hour/forecast level"
+2023,0.08400988654898879,-0.006776589890638185,0.16173066553113855,52,376,"placebo: price 20-50 vs >50, same month/hour/forecast level"
+2024,0.10405193659113894,-0.020074899157322766,0.22899402548568798,81,712,"placebo: price 20-50 vs >50, same month/hour/forecast level"
+2025,0.0050879085946666115,-0.0601532194846972,0.06073653832512485,50,459,"placebo: price 20-50 vs >50, same month/hour/forecast level"
+2026,-0.0031924217787302474,-0.03922542641464005,0.04170450364295556,59,424,"placebo: price 20-50 vs >50, same month/hour/forecast level"
+2024,-0.06383879480749757,-0.09848670355304785,-0.024036863950665118,62,940,"price<=0 vs >0, same month/hour/irradiance"
+2025,-0.16045002018152482,-0.1892351026520243,-0.10000980850521354,64,1088,"price<=0 vs >0, same month/hour/irradiance"
+2026,-0.2393116079581354,-0.2772229548421517,-0.1956612109640406,62,886,"price<=0 vs >0, same month/hour/irradiance"
