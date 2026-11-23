@@ -1,0 +1,7 @@
+,"price<=0 vs >0, same month/hour/forecast level","price<=0 vs >0, same month/hour/forecast level","price<=0 vs >0, same month/hour/forecast level","placebo: weekend vs weekday, price > 20 only","placebo: weekend vs weekday, price > 20 only","placebo: weekend vs weekday, price > 20 only","price<=0 vs >0, same month/hour/irradiance","price<=0 vs >0, same month/hour/irradiance","price<=0 vs >0, same month/hour/irradiance"
+,gap,cells,treated_periods,gap,cells,treated_periods,gap,cells,treated_periods
+year,,,,,,,,,
+2023,-0.007929420247517928,18,137,0.009624594955398393,197,1797,,,
+2024,-0.06043835539565989,80,930,0.040661525067303576,139,1394,-0.06383879480749757,62.0,940.0
+2025,-0.1010721635082143,85,1078,-0.046038839996039485,131,1272,-0.16045002018152482,64.0,1088.0
+2026,-0.22655004522255434,72,821,0.07728785373203607,111,1015,-0.2393116079581354,62.0,886.0
