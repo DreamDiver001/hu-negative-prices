@@ -6,5 +6,9 @@ figures/*
 !figures/tipping_point.png
 !figures/solar_ratio_by_price.png
 !figures/paper_battery.png
+!figures/paper_reliability.png
+!figures/paper_heatmap_years.png
+!figures/paper_tipping_point.png
+!figures/paper_solar_ratio.png
 results/*.parquet
 __pycache__/
