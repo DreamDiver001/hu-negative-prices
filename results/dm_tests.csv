@@ -1,0 +1,9 @@
+source,model_a,model_b,days,mean_brier_gap_a_minus_b,dm_stat,p_value,better
+timing check,"logistic, no ENTSO-E wind/solar forecast","logistic, all features",690,-0.00019302421623594704,-0.6015154563857578,0.547496720214427,"logistic, no ENTSO-E wind/solar forecast"
+timing check,"lgbm_reg, no ENTSO-E wind/solar forecast","lgbm_reg, all features",690,-0.0008912328756645272,-1.5498541503187755,0.12117652651019638,"lgbm_reg, no ENTSO-E wind/solar forecast"
+timing check,"logistic, no ENTSO-E wind/solar forecast",climatology,690,-0.012885345557959678,-6.60807436883363,3.8935109917904474e-11,"logistic, no ENTSO-E wind/solar forecast"
+experiments (2024 on),logistic,climatology,1056,-0.012436361941440037,-6.564035456264683,5.2370740275452524e-11,logistic
+experiments (2024 on),lgbm_reg,climatology,1056,-0.012389881863766657,-6.877922321603381,6.073176819053837e-12,lgbm_reg
+experiments (2024 on),lgbm_reg,lightgbm,1056,-0.0028157327634921107,-5.27480120563237,1.329000716078878e-07,lgbm_reg
+experiments (2024 on),lgbm_reg,logistic,1056,4.648007767337877e-05,0.06301674393664976,0.9497531710872388,logistic
+experiments (2024 on),lgbm_reg_cal,lgbm_reg,1056,0.002148098800788633,2.162685680864704,0.03056536317253641,lgbm_reg

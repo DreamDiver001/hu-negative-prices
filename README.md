@@ -81,6 +81,14 @@ python src/sensitivity.py
 
 Reruns the battery with the saved forecasts for no or higher degradation cost, 1 and 4 hour batteries, and 80% and 92% round-trip efficiency, and prints each strategy's share of the perfect-foresight profit and the euros a day the forecast adds over the fixed schedule.
 
+## Robustness
+
+```
+python src/robustness.py
+```
+
+Two checks. The timing check retrains logistic regression and the regularised LightGBM without the ENTSO-E wind and solar forecast (which only has to be published by 18:00 the day before, after the auction), using the day-ahead weather instead. To keep it fair, every variant trains from January 2024, when the weather data starts, and is tested from January 2025. Then Diebold-Mariano tests on daily mean Brier loss, with a 7-day Newey-West variance, say whether the differences between models are larger than chance, both for the timing check and for the models in `experiments.py`.
+
 ## Figures for the paper
 
 ```
