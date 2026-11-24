@@ -73,6 +73,14 @@ First it forecasts the price for every period as three quantiles (10%, 50%, 90%)
 
 Then it runs a 1 MW / 2 MWh battery (88% round trip, at most one full cycle a day, empty at midnight, 10 €/MWh degradation cost) through every test day with four strategies: perfect foresight (the upper bound), a fixed schedule (charge 10:00-15:00, discharge 18:00-21:00), a schedule optimised on the median forecast, and a cautious one that plans with the 90% quantile as the buying price and the 10% quantile as the selling price. Each day is a small linear program. Profit is always counted at the real prices.
 
+The 10–90% price ranges come out too narrow, so they are widened with conformal calibration: before each month, the forecast errors of the previous 90 days set how far to stretch both ends (`--conformal-days`). A fifth strategy, the cautious one with these calibrated ranges, is added.
+
+```
+python src/sensitivity.py
+```
+
+Reruns the battery with the saved forecasts for no or higher degradation cost, 1 and 4 hour batteries, and 80% and 92% round-trip efficiency, and prints each strategy's share of the perfect-foresight profit and the euros a day the forecast adds over the fixed schedule.
+
 ## Figures for the paper
 
 ```

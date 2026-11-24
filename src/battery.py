@@ -56,6 +56,22 @@ def pinball(y, q, alpha):
     return float(np.mean(np.maximum(alpha * d, (alpha - 1) * d)))
 
 
+def conformal(preds, days=90, level=0.8, min_days=30):
+    # widen q10/q90 by the error spread of the previous `days` days of out-of-sample forecasts
+    local = preds.index.tz_convert(TZ)
+    day = pd.Series(local.tz_localize(None).normalize(), index=preds.index)
+    month = local.strftime("%Y-%m")
+    score = np.maximum(preds["q10"] - preds["price"], preds["price"] - preds["q90"])
+    shift = pd.Series(0.0, index=preds.index)
+    for m in sorted(set(month)):
+        start = pd.Timestamp(f"{m}-01")
+        past = score[(day >= start - pd.Timedelta(days=days)) & (day < start)]
+        if day[(day >= start - pd.Timedelta(days=days)) & (day < start)].nunique() >= min_days:
+            n = len(past)
+            shift[month == m] = np.quantile(past, min(1.0, np.ceil((n + 1) * level) / n))
+    return preds.assign(q10c=preds["q10"] - shift, q90c=preds["q90"] + shift, conformal_shift=shift)
+
+
 def forecast_metrics(preds):
     rows = []
     for period, g in [("all", preds)] + list(preds.groupby("period", sort=False)):
@@ -67,6 +83,8 @@ def forecast_metrics(preds):
             "pinball_q10": pinball(g["price"], g["q10"], 0.1),
             "pinball_q90": pinball(g["price"], g["q90"], 0.9),
             "coverage_q10_q90": float(((g["price"] >= g["q10"]) & (g["price"] <= g["q90"])).mean()),
+            "coverage_calibrated": float(((g["price"] >= g["q10c"]) & (g["price"] <= g["q90c"])).mean()),
+            "mean_width_calibrated": float((g["q90c"] - g["q10c"]).mean()),
         })
     return pd.DataFrame(rows)
 
@@ -98,7 +116,8 @@ def fixed_rule(hours, power, energy, eff, dt=0.25):
     charge_win, discharge_win = (hours >= 10) & (hours < 15), (hours >= 18) & (hours < 21)
     c, d = np.zeros(len(hours)), np.zeros(len(hours))
     if charge_win.any() and discharge_win.any():
-        c[charge_win] = min(power, energy / ec / (charge_win.sum() * dt))
+        target = min(energy, power * discharge_win.sum() * dt / ed)
+        c[charge_win] = min(power, target / ec / (charge_win.sum() * dt))
         stored = c.sum() * dt * ec
         d[discharge_win] = min(power, stored * ed / (discharge_win.sum() * dt))
     return c, d
@@ -115,6 +134,7 @@ def simulate(preds, power, energy, eff, deg, dt=0.25):
             "fixed schedule": fixed_rule(g["hour"].to_numpy(), power, energy, eff),
             "median forecast": schedule(g["q50"].to_numpy(), g["q50"].to_numpy(), power, energy, eff, deg),
             "cautious (buy at q90, sell at q10)": schedule(g["q90"].to_numpy(), g["q10"].to_numpy(), power, energy, eff, deg),
+            "cautious, calibrated ranges": schedule(g["q90c"].to_numpy(), g["q10c"].to_numpy(), power, energy, eff, deg),
         }
         for name, (c, d) in plans.items():
             rows.append({
@@ -167,6 +187,7 @@ def main():
     p.add_argument("--energy", type=float, default=2.0, help="MWh")
     p.add_argument("--eff", type=float, default=0.88, help="round-trip efficiency")
     p.add_argument("--deg", type=float, default=10.0, help="degradation cost, EUR per MWh discharged")
+    p.add_argument("--conformal-days", type=int, default=90, help="days of past forecast errors used to widen the ranges")
     a = p.parse_args()
 
     out, figs = Path(a.out), Path(a.figures)
@@ -189,6 +210,7 @@ def main():
         preds[list(QUANTILES)] = q
         preds.to_parquet(saved)
 
+    preds = conformal(preds, a.conformal_days)
     fm = forecast_metrics(preds)
     fm.to_csv(out / "price_forecast_metrics.csv", index=False)
     print("\nprice forecast accuracy (EUR/MWh)")
