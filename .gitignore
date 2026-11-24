@@ -1,6 +1,10 @@
 .venv/
 .env
 data/
-figures/
-__pycache__/
+figures/*
+!figures/negative_price_heatmap.png
+!figures/tipping_point.png
+!figures/solar_ratio_by_price.png
+!figures/paper_battery.png
 results/*.parquet
+__pycache__/
