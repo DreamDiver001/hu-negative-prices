@@ -1,98 +1,85 @@
 # Negative electricity prices in Hungary
 
-Forecasting when Hungarian day-ahead electricity prices go to zero or below, and measuring what those forecasts are worth to a battery.
+Hungary's day-ahead electricity price was at or below zero for 344 hours in 2025, against ten or fewer a year before 2023. This project asks three questions, using only public data from ENTSO-E and Open-Meteo for 2020 to 2026:
 
-## Setup
+1. Can those periods be predicted the day before, with information available before the 12:00 auction?
+2. Did the switch to 15-minute day-ahead prices on 1 October 2025 change them, and do models trained on hourly data still work?
+3. What are the forecasts worth to a battery?
 
-Needs Python 3.12 or newer (entsoe-py 1.0 requires it).
+Every number below can be rebuilt from scratch with the scripts in `src/`.
+
+## Results
+
+**Negative prices became routine in two years.**
+
+| Year | Hours ≤ 0 €/MWh | Average price (€/MWh) |
+| --- | --- | --- |
+| 2020–2022 | 1–10 a year | 39–272 |
+| 2023 | 93 | 106.8 |
+| 2024 | 306 | 100.8 |
+| 2025 | 344 | 108.5 |
+| 2026, to 21 Nov | 290.5 | 149.0 |
+
+They fall almost entirely between 10:00 and 16:00 and peak in April. The 2024 and 2025 averages match the HUPX annual report (100.81 and 108.51 €/MWh).
+
+![Share of time with price at or below zero, by month and hour](figures/negative_price_heatmap.png)
+
+**They can be predicted a day ahead.** In a monthly rolling backtest from January 2024 to November 2026 (3.7% of periods at or below zero), logistic regression and a regularised, monotone LightGBM both reach a Brier skill of 0.40 over climatology and a PR-AUC of 0.70–0.72. They are statistically tied (Diebold–Mariano p = 0.95). Yesterday's outcome is worse than climatology. Dropping the ENTSO-E wind and solar forecast, which may be published after the auction, costs nothing.
+
+**The market changed in 2026.** Models trained only on hourly data kept their skill on 15-minute prices for six months, then lost it in summer 2026. Two things moved:
+
+- The residual load (load minus wind and solar) at which the chance of a non-positive price reaches 50% rose from 506 MW in 2023 to 1,199 MW in 2025, then fell to −72 MW in 2026. Prices now need about 1 GW more surplus to go negative.
+
+  ![Price at or below zero against residual load, by year](figures/tipping_point.png)
+
+- Solar output at non-positive prices ran 23% below its forecast in 2026, about 224 GWh (95% interval 150–299), against 2% in 2023. At normal prices it runs slightly above the forecast every year, and a placebo between two normal price bands shows no gap. This looks like plants curtailing at zero or negative prices.
+
+  ![Actual over forecast solar by price band and year](figures/solar_ratio_by_price.png)
+
+**A forecast is worth about €75 a day to a 1 MW / 2 MWh battery.** Scheduled on the median price forecast it earns 89% of the perfect-foresight profit; a fixed charge-at-noon, sell-in-the-evening schedule earns 64% and collapses in winter. A cautious strategy that buys at the 90% quantile and sells at the 10% quantile does worse, not better, because forecast errors within a day move together. The ranking holds for 1 to 4 hour batteries, 80–92% efficiency and 0–20 €/MWh degradation cost.
+
+![Battery profit by strategy](figures/paper_battery.png)
+
+## Running it
+
+Python 3.12 or newer.
 
 ```
 python -m venv .venv
-source .venv/bin/activate        # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
+source .venv/bin/activate        # Windows: .venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
 ```
 
-ENTSO-E token:
+ENTSO-E needs a free token: register at https://transparency.entsoe.eu, email transparency@entsoe.eu with the subject "Restful API access", then generate the token under My Account Settings and set it with `export ENTSOE_API_KEY=...` (PowerShell: `$env:ENTSOE_API_KEY="..."`). Open-Meteo needs no key.
 
-1. Register at https://transparency.entsoe.eu
-2. Email transparency@entsoe.eu with the subject "Restful API access" and your account email in the body
-3. Once approved, generate the token under My Account Settings
-4. Copy `.env.example` to `.env`, paste the token, then `export ENTSOE_API_KEY=...` (PowerShell: `$env:ENTSOE_API_KEY="..."`)
+Run the scripts in this order. Each one reads what the previous ones saved.
 
-Open-Meteo needs no key.
+| Step | Command | What it does | Time |
+| --- | --- | --- | --- |
+| 1 | `python src/collect_entsoe.py --start 2020-01-01 --only core` | Hungarian prices, load, wind and solar forecasts, generation | 30–60 min |
+| 2 | `python src/collect_entsoe.py --start 2020-01-01` | Adds neighbour prices and border flows (optional) | 30–60 min |
+| 3 | `python src/collect_weather.py --mode dayahead --start 2024-01-01` | Weather forecasts made the day before, 9 locations | a few min |
+| 4 | `python src/first_look.py` | Negative hours per year, heatmap | seconds |
+| 5 | `python src/build_dataset.py` | One 15-minute feature table | a minute |
+| 6 | `python src/baselines.py` | Climatology, persistence, logistic, LightGBM | a few min |
+| 7 | `python src/experiments.py` | Regularised and calibrated LightGBM, RQ2 frozen-model test | a few min |
+| 8 | `python src/drift_analysis.py` | Tipping point and solar output against forecast by year | seconds |
+| 9 | `python src/curtailment_checks.py` | Matched comparisons, placebo, curtailed GWh, 95% intervals | a few min |
+| 10 | `python src/battery.py` | Price quantile forecasts and the battery simulation | 10–20 min |
+| 11 | `python src/sensitivity.py` | Battery under seven sets of assumptions | a few min |
+| 12 | `python src/robustness.py` | Run without the ENTSO-E forecast, Diebold–Mariano tests | a few min |
+| 13 | `python src/make_figures.py` | The battery figure | seconds |
 
-## Getting the data
-
-```
-python src/collect_entsoe.py --start 2020-01-01 --only core
-python src/collect_entsoe.py --start 2020-01-01
-python src/collect_weather.py --mode dayahead --start 2024-01-01
-python src/collect_weather.py --mode stitched --start 2022-01-01
-python src/first_look.py
-```
-
-## Features and baselines
-
-```
-python src/build_dataset.py
-python src/baselines.py
-```
-
-`build_dataset.py` merges the core ENTSO-E data, and the `dayahead` weather if it is there, into one table at 15-minute resolution (`data/processed/features.parquet`). Before October 2025 the hourly price is repeated over its four quarters. `y` is 1 when the price is at or below 0 €/MWh.
-
-`baselines.py` retrains every model at the start of each month from 2024 on, using everything since 2023, and forecasts that month. It prints Brier skill (against climatology) and PR-AUC for 2024, January to September 2025, and the 15-minute period, and saves the predictions, metrics, LightGBM feature importance and a reliability plot. Expect a few minutes.
-
-`experiments.py` runs the same monthly backtest with a regularised LightGBM (monotone in residual load and solar share), a version of it calibrated on the last 6 months of training data, and the RQ2 transfer test: models trained once on data before 1 October 2025 against the monthly retrained ones, by quarter after the switch. It also reports how often the four quarters of an hour disagree on the sign of the price.
-
-`drift_analysis.py` looks at what changed in 2026. For each year it finds the residual load at which the chance of a price at or below 0 reaches 50%, and compares actual solar output with the day-ahead solar forecast at different price levels. If output falls well below the forecast only when prices are negative, solar plants are switching off.
-
-`curtailment_checks.py` tests that reading three ways: the output gap at the same month, hour and forecast level (and, from 2024, the same irradiance), with a placebo between two normal price bands (20–50 and above 50 €/MWh) that should show no gap; the solar energy missing at prices at or below 0 in GWh per year; and the tipping point fitted separately for spring, summer and autumn (only where a season has at least 100 such periods). The 95% intervals come from resampling whole days 200 times (`--reps`).
-
-`--only core` gets the Hungarian prices, load, wind/solar forecasts and generation first; the second command adds neighbour prices and border flows. Downloads run 3 datasets at a time (`--workers`), one month per request (`--chunk year` is faster but ENTSO-E often answers it with HTTP 599).
-
-Both collectors save one parquet file per month (ENTSO-E) or per location and year (weather) under `data/raw/`. Finished files are skipped on the next run, so if something fails or you stop it halfway, run the same command again. The current month or year is always fetched again.
-
-`first_look.py` prints the number of negative-price hours per year and saves a month × hour heatmap to `figures/`.
+The downloads save one file per month under `data/raw/` and skip what they already have, so an interrupted run can simply be started again. `battery.py --reuse` skips the slow forecasting step when only the battery settings change (`--power`, `--energy`, `--eff`, `--deg`).
 
 ## Data notes
 
-- Timestamps are stored in UTC. Convert to Europe/Budapest for anything about time of day.
-- Day-ahead prices are hourly until 30 Sep 2025 and 15-minute from 1 Oct 2025, when the European day-ahead market switched to a 15-minute market time unit.
-- `wind_solar_forecast_HU` and the forecast column in `load_HU` are published the day before, so they can be used as features. One catch: the rules only require the wind and solar forecast by 18:00 the day before, after the 12:00 auction. Worth a robustness run without it, using the weather forecast instead. `generation_HU` and actual load are only known afterwards, so use them only for analysis.
-- Weather `dayahead` mode is the forecast made one day earlier (available from 2024). `stitched` mode is close to the observed weather, so using it as a feature would leak information from the future.
+- Timestamps are stored in UTC.
+- Prices are hourly until 30 September 2025 and 15-minute from 1 October 2025. Before the switch each hourly price is repeated over its four quarters.
+- Features must be known before 12:00 the day before delivery. The load forecast is; the wind and solar forecast only has to be published by 18:00, which is why `robustness.py` repeats the main results without it.
+- Actual generation and actual load are only used for analysis, never as features.
+- The weather features use Open-Meteo's archive of forecasts made one day earlier, available from January 2024, not observed weather.
 
-## Battery (RQ3)
+## Paper
 
-```
-python src/battery.py
-python src/battery.py --reuse --deg 0
-python src/battery.py --reuse --energy 4
-```
-
-First it forecasts the price for every period as three quantiles (10%, 50%, 90%) with LightGBM, retrained each month, and compares the median with two naive forecasts (the price 1 and 7 days earlier). The forecasts are saved, so `--reuse` skips this slow step when you only change the battery.
-
-Then it runs a 1 MW / 2 MWh battery (88% round trip, at most one full cycle a day, empty at midnight, 10 €/MWh degradation cost) through every test day with four strategies: perfect foresight (the upper bound), a fixed schedule (charge 10:00-15:00, discharge 18:00-21:00), a schedule optimised on the median forecast, and a cautious one that plans with the 90% quantile as the buying price and the 10% quantile as the selling price. Each day is a small linear program. Profit is always counted at the real prices.
-
-The 10–90% price ranges come out too narrow, so they are widened with conformal calibration: before each month, the forecast errors of the previous 90 days set how far to stretch both ends (`--conformal-days`). A fifth strategy, the cautious one with these calibrated ranges, is added.
-
-```
-python src/sensitivity.py
-```
-
-Reruns the battery with the saved forecasts for no or higher degradation cost, 1 and 4 hour batteries, and 80% and 92% round-trip efficiency, and prints each strategy's share of the perfect-foresight profit and the euros a day the forecast adds over the fixed schedule.
-
-## Robustness
-
-```
-python src/robustness.py
-```
-
-Two checks. The timing check retrains logistic regression and the regularised LightGBM without the ENTSO-E wind and solar forecast (which only has to be published by 18:00 the day before, after the auction), using the day-ahead weather instead. To keep it fair, every variant trains from January 2024, when the weather data starts, and is tested from January 2025. Then Diebold-Mariano tests on daily mean Brier loss, with a 7-day Newey-West variance, say whether the differences between models are larger than chance, both for the timing check and for the models in `experiments.py`.
-
-## Figures for the paper
-
-```
-python src/make_figures.py
-```
-
-Builds `figures/paper_battery.png` and `.pdf` from the battery results: cumulative profit by strategy and each strategy's share of the perfect-foresight profit by month, with November to February shaded.
+A draft write-up of the methods and results is in progress. Data: [ENTSO-E Transparency Platform](https://transparency.entsoe.eu) and [Open-Meteo](https://open-meteo.com) (CC BY 4.0).
