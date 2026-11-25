@@ -10,5 +10,6 @@ figures/*
 !figures/paper_heatmap_years.png
 !figures/paper_tipping_point.png
 !figures/paper_solar_ratio.png
+!figures/paper_shap.png
 results/*.parquet
 __pycache__/

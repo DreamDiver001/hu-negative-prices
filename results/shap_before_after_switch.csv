@@ -1,0 +1,11 @@
+,trained to Sep 2025,trained on all
+residual_fc,29.4,32.8
+offday,6.0,9.4
+price_lag7d,13.1,8.9
+price_lag1d,5.5,7.8
+price_mean_prevday,2.2,5.8
+wx_shortwave_radiation,3.9,5.4
+wx_diffuse_radiation,3.2,3.4
+load_fc,2.6,3.2
+weekday,4.4,3.1
+residual_fc_daymin,6.8,2.9

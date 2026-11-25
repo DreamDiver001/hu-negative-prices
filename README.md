@@ -71,6 +71,7 @@ Run the scripts in this order. Each one reads what the previous ones saved.
 | 13 | `python src/make_figures.py` | Paper figures: battery, reliability, heatmap by year, tipping point, solar ratio | a minute |
 | 14 | `python src/revision_checks.py` | Control year for RQ2, curtailment with weekend/holiday cells, harder baselines, q30/q70 battery | 15–30 min first time |
 | 15 | `python src/neighbour_control.py` | Tipping point holding neighbour prices and net exports fixed (needs step 2) | a few min |
+| 16 | `python src/explain_model.py` | SHAP for the regularised model, model settings and package versions | about a minute |
 
 The downloads save one file per month under `data/raw/` and skip what they already have, so an interrupted run can simply be started again. `battery.py --reuse` skips the slow forecasting step when only the battery settings change (`--power`, `--energy`, `--eff`, `--deg`). `revision_checks.py --skip battery` leaves out its slow part; the q30/q70 forecasts are cached after the first run.
 
